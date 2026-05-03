@@ -1,0 +1,67 @@
+name: Build mod
+
+# ── Триггеры ──────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [ "main", "master" ]   # каждый push в основную ветку
+  pull_request:
+    branches: [ "main", "master" ]   # каждый PR
+  workflow_dispatch:                  # ручной запуск из вкладки Actions
+
+# ── Единственная задача ───────────────────────────────────────────────────────
+jobs:
+  build:
+    name: Build with Gradle
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Клонируем репозиторий
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Устанавливаем Java 17 (требование Minecraft 1.20.1 / Fabric)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'   # Eclipse Temurin — стабильный OpenJDK-форк
+
+      # 3. Кешируем Gradle-зависимости и кеш Loom
+      #    Это ускоряет повторные сборки с ~3 мин до ~30 сек.
+      - name: Cache Gradle and Loom
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle/loom-cache
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4. Делаем gradlew исполняемым (в репозитории может не быть chmod +x)
+      - name: Grant execute permission to gradlew
+        run: chmod +x gradlew
+
+      # 5. Собираем мод
+      #    --no-daemon  — не запускать фоновый процесс внутри CI
+      #    build        — компилирует, запускает тесты (если есть), пакует jar
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+        env:
+          # Отключаем интерактивные подсказки Gradle
+          GRADLE_OPTS: "-Dorg.gradle.welcome=never"
+
+      # 6. Загружаем готовые jar-файлы как Artifact
+      #    После успешного прогона они появятся во вкладке
+      #    Actions → выбрать запуск → раздел "Artifacts" → кнопка Download.
+      - name: Upload mod jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: bbvisualizer-${{ github.run_number }}   # уникальное имя на каждый запуск
+          path: |
+            build/libs/*.jar
+            !build/libs/*-dev.jar         # исключаем dev-jar (без remapping)
+            !build/libs/*-sources.jar     # исключаем sources-jar (опционально: удали строку, если нужен)
+          if-no-files-found: error        # провалить сборку, если jar не создался
+          retention-days: 30              # хранить 30 дней, затем удалить автоматически
