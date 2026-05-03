@@ -3,15 +3,11 @@ name: Build mod
 on:
   push:
     branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build with Gradle
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,5 +26,3 @@ jobs:
         with:
           name: bbvisualizer-jar
           path: build/libs/*.jar
-          if-no-files-found: error
-      
