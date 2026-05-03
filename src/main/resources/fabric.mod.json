@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "bbvisualizer",
+  "version": "${version}",
+  "name": "BoundingBox Visualizer",
+  "description": "Учебный мод: динамическое изменение и wireframe-визуализация хитбоксов сущностей.",
+  "authors": [
+    "YourName"
+  ],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.example.bbvisualizer.BoundingBoxVisualizer"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.21",
+    "fabric-api":   "*",
+    "minecraft":    "~1.20.1",
+    "java":         ">=17"
+  }
+}
